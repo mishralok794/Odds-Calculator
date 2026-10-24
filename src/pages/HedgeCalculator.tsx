@@ -11,6 +11,7 @@ import {
   XCircle,
   MinusCircle,
   Info,
+  Shield,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { calcHedge, roundStake, calcRoundedHedgeResults, isValidDecimalOdds, isValidStake } from '../utils/hedgeCalc';
