@@ -24,14 +24,21 @@ export default function LossRecoveryPage() {
   const loss = Number(session.loss);
   const odds = Number(session.odds);
   const valid = Number.isFinite(loss) && loss >= 0 && Number.isFinite(odds) && odds > 1;
-  const stake = useMemo(() => valid ? Math.ceil((loss / (odds - 1)) * 100) / 100 : null, [loss, odds, valid]);
+  const suggestedStake = useMemo(() => valid ? Math.ceil((loss / (odds - 1)) * 100) / 100 : null, [loss, odds, valid]);
+  const [stakeOverride, setStakeOverride] = useState('');
+  const stake = stakeOverride === '' ? suggestedStake : Number(stakeOverride);
+  const validStake = stake !== null && Number.isFinite(stake) && stake > 0;
   const fmt = (value: number) => `${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const markLost = () => {
-    if (stake === null) return;
-    setSession((current) => ({ ...current, loss: (Number(current.loss) + stake).toFixed(2), rounds: current.rounds + 1 }));
+    if (!validStake) return;
+    const actualStake = Number(stake);
+    setSession((current) => ({ ...current, loss: (Number(current.loss) + actualStake).toFixed(2), rounds: current.rounds + 1 }));
+    setStakeOverride('');
   };
-  const reset = () => setSession(EMPTY_SESSION);
+  const reset = () => { setSession(EMPTY_SESSION); setStakeOverride(''); };
+  const updateLoss = (value: string) => { setSession((s) => ({ ...s, loss: value })); setStakeOverride(''); };
+  const updateOdds = (value: string) => { setSession((s) => ({ ...s, odds: value })); setStakeOverride(''); };
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 animate-slide-up">
@@ -45,12 +52,12 @@ export default function LossRecoveryPage() {
         <section className="card p-5 sm:p-6 space-y-5">
           <div>
             <label className="label" htmlFor="recovery-loss">Ab tak ka total loss ({currencySymbol})</label>
-            <input id="recovery-loss" className="input-field text-lg" type="number" min="0" step="0.01" value={session.loss} onChange={(e) => setSession((s) => ({ ...s, loss: e.target.value }))} placeholder="Jaise 10.00" />
+            <input id="recovery-loss" className="input-field text-lg" type="number" min="0" step="0.01" value={session.loss} onChange={(e) => updateLoss(e.target.value)} placeholder="Jaise 10.00" />
             <p className="text-xs text-gray-500 mt-1.5">Is series mein pehle haare hue stakes ka total. Aap ise kabhi bhi edit kar sakte hain.</p>
           </div>
           <div>
             <label className="label" htmlFor="recovery-odds">Current decimal odds</label>
-            <input id="recovery-odds" className="input-field text-lg" type="number" min="1.01" step="0.01" value={session.odds} onChange={(e) => setSession((s) => ({ ...s, odds: e.target.value }))} placeholder="Jaise 1.40" />
+            <input id="recovery-odds" className="input-field text-lg" type="number" min="1.01" step="0.01" value={session.odds} onChange={(e) => updateOdds(e.target.value)} placeholder="Jaise 1.40" />
             <p className="text-xs text-gray-500 mt-1.5">Har naye bet ke liye odds update karein. Odds 1.00 se zyada hone chahiye.</p>
           </div>
           {!valid && <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-300">Sahi calculation ke liye loss 0 ya usse zyada aur odds 1.00 se zyada daalein.</div>}
@@ -59,14 +66,16 @@ export default function LossRecoveryPage() {
 
         <section className="card p-5 sm:p-6 border-blue-500/20 bg-gradient-to-br from-blue-600/10 to-indigo-600/5">
           <div className="flex items-center gap-2 text-gray-300 text-sm"><TrendingUp size={17} className="text-blue-400" /> Recovery ke liye agla stake</div>
-          <div className="text-4xl sm:text-5xl font-bold text-white mt-4 mb-2">{stake === null ? '—' : fmt(stake)}</div>
-          <p className="text-sm text-gray-400">Agar yeh bet jeeta, to diye gaye loss ke barabar net profit banega.</p>
+          <label className="label mt-4" htmlFor="recovery-stake">Aapka agla stake ({currencySymbol})</label>
+          <input id="recovery-stake" className="input-field text-3xl sm:text-4xl font-bold text-white mb-2" type="number" min="0.01" step="0.01" value={stakeOverride === '' ? suggestedStake ?? '' : stakeOverride} onChange={(e) => setStakeOverride(e.target.value)} placeholder="Stake amount" />
+          <p className="text-xs text-gray-500">Suggested: {suggestedStake === null ? '—' : fmt(suggestedStake)}. Zarurat ho to stake amount edit karein.</p>
+          <p className="text-sm text-gray-400 mt-2">Jeetne par is stake ka net profit current total loss ke barabar hoga.</p>
           {valid && <div className="mt-5 border-t border-white/[0.08] pt-4 space-y-2 text-sm">
             <div className="flex justify-between text-gray-400"><span>Current total loss</span><span className="text-gray-200">{fmt(loss)}</span></div>
             <div className="flex justify-between text-gray-400"><span>Odds</span><span className="text-gray-200">{odds.toFixed(2)}×</span></div>
-            <div className="flex justify-between text-gray-400"><span>Estimated net winnings</span><span className="text-emerald-400">{stake === null ? '—' : fmt(stake * (odds - 1))}</span></div>
+            <div className="flex justify-between text-gray-400"><span>Estimated net winnings</span><span className="text-emerald-400">{validStake ? fmt(stake * (odds - 1)) : '—'}</span></div>
           </div>}
-          <button className="btn-primary w-full mt-5" disabled={stake === null} onClick={markLost}>Yeh stake bhi haar gaya — total mein jodein</button>
+          <button className="btn-primary w-full mt-5" disabled={!validStake || !valid} onClick={markLost}>Yeh stake bhi haar gaya — {validStake ? fmt(stake) : 'stake'} loss mein jodein</button>
           {session.rounds > 0 && <p className="text-xs text-gray-500 text-center mt-3">Is series mein {session.rounds} haare hue stake auto-add hue hain.</p>}
         </section>
       </div>
