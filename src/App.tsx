@@ -10,6 +10,7 @@ import ArbitrageAnalyzerPage from './pages/ArbitrageAnalyzer';
 import MultiBetTrackerPage from './pages/MultiBetTracker';
 import SavedCalculationsPage from './pages/SavedCalculations';
 import SettingsPage from './pages/Settings';
+import LossRecoveryPage from './pages/LossRecovery';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/hedge" element={<HedgeCalculatorPage />} />
+            <Route path="/recovery" element={<LossRecoveryPage />} />
             <Route path="/odds" element={<OddsConverterPage />} />
             <Route path="/probability" element={<ProbabilityCalculatorPage />} />
             <Route path="/arbitrage" element={<ArbitrageAnalyzerPage />} />

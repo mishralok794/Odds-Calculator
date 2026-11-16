@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Shield,
+  RotateCcw,
   ListChecks,
   TrendingUp,
   ArrowLeftRight,
@@ -17,6 +18,7 @@ import {
 const NAV_ITEMS = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/hedge', label: 'Hedge Calculator', icon: Shield, highlight: true },
+  { path: '/recovery', label: 'Loss Recovery', icon: RotateCcw },
   { path: '/tracker', label: 'Multi-Bet Tracker', icon: ListChecks },
   { path: '/arbitrage', label: 'Arbitrage Analyzer', icon: TrendingUp },
   { path: '/odds', label: 'Odds Converter', icon: ArrowLeftRight },
