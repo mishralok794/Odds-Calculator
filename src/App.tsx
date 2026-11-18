@@ -12,6 +12,8 @@ import SavedCalculationsPage from './pages/SavedCalculations';
 import SettingsPage from './pages/Settings';
 import LossRecoveryPage from './pages/LossRecovery';
 
+const StrategyAnalyzerPage = React.lazy(() => import('./pages/StrategyAnalyzer'));
+
 function App() {
   return (
     <AppProvider>
@@ -21,6 +23,7 @@ function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/hedge" element={<HedgeCalculatorPage />} />
             <Route path="/recovery" element={<LossRecoveryPage />} />
+            <Route path="/strategy" element={<React.Suspense fallback={<div className="p-8 text-sm text-gray-400">Strategy Analyzer load ho raha hai…</div>}><StrategyAnalyzerPage /></React.Suspense>} />
             <Route path="/odds" element={<OddsConverterPage />} />
             <Route path="/probability" element={<ProbabilityCalculatorPage />} />
             <Route path="/arbitrage" element={<ArbitrageAnalyzerPage />} />
