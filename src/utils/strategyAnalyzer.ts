@@ -1,5 +1,5 @@
 export type PlayerId = 'A' | 'B';
-export type BetStatus = 'WIN' | 'LOSS' | 'HOLD' | 'RECOVERY';
+export type BetStatus = 'WIN' | 'LOSS' | 'RECOVERY';
 
 export interface PlayerBallResult {
   status: BetStatus;
@@ -32,7 +32,6 @@ export interface PlayerReport {
   wins: number;
   losses: number;
   recoveries: number;
-  holds: number;
   lossCycles: number;
   normalInvestment: number;
   recoveryInvestment: number;
@@ -57,7 +56,7 @@ export interface StrategyAnalysis {
 }
 
 export const STRATEGY_RULES = {
-  A: { targetDescription: '0 run', odds: 2.3, normalBet: 10 },
+  A: { targetDescription: '0 run', odds: 2.5, normalBet: 10 },
   B: { targetDescription: '1–6 runs', odds: 1.3, normalBet: 10 },
 } as const;
 
@@ -67,7 +66,6 @@ interface RecoveryState {
   wins: number;
   losses: number;
   recoveries: number;
-  holds: number;
   lossCycles: number;
   normalInvestment: number;
   recoveryInvestment: number;
@@ -82,7 +80,7 @@ interface RecoveryState {
 
 function emptyState(): RecoveryState {
   return {
-    pending: 0, recovering: false, wins: 0, losses: 0, recoveries: 0, holds: 0,
+    pending: 0, recovering: false, wins: 0, losses: 0, recoveries: 0,
     lossCycles: 0, normalInvestment: 0, recoveryInvestment: 0, lossInvestment: 0,
     normalWinReturns: 0, recoveryReturns: 0, totalLostAmount: 0, totalReturn: 0, totalInvestment: 0, net: 0,
   };
@@ -98,23 +96,28 @@ function processPlayerBall(outcome: number, player: PlayerId, state: RecoverySta
   let returned = 0;
   let reason: string;
 
-  if (state.recovering && !isTarget) {
-    status = 'HOLD';
-    state.holds += 1;
-    reason = `Recovery active hai aur ${outcome} target (${rules.targetDescription}) nahi hai, isliye naya bet nahi laga.`;
-  } else if (state.recovering && isTarget) {
-    status = 'RECOVERY';
+  if (state.recovering) {
     bet = state.pending / (rules.odds - 1);
-    returned = bet * rules.odds;
-    state.recoveries += 1;
     state.recoveryInvestment += bet;
-    state.recoveryReturns += returned;
     state.totalInvestment += bet;
-    state.totalReturn += returned;
-    state.net += returned - bet;
-    reason = `Target ${rules.targetDescription} aaya; pending ${previousPending.toFixed(2)} recover karne ke liye recovery bet laga.`;
-    state.pending = 0;
-    state.recovering = false;
+    if (isTarget) {
+      status = 'RECOVERY';
+      returned = bet * rules.odds;
+      state.recoveries += 1;
+      state.recoveryReturns += returned;
+      state.totalReturn += returned;
+      state.net += returned - bet;
+      reason = `Target ${rules.targetDescription} aaya; calculated recovery bet ne pending ${previousPending.toFixed(2)} recover kiya.`;
+      state.pending = 0;
+      state.recovering = false;
+    } else {
+      status = 'LOSS';
+      state.losses += 1;
+      state.totalLostAmount += bet;
+      state.pending += bet;
+      state.net -= bet;
+      reason = `Recovery bet ${bet.toFixed(2)} haara; yeh pending loss mein jud gaya aur agla recovery bet naye total par calculate hoga.`;
+    }
   } else if (isTarget) {
     status = 'WIN';
     bet = rules.normalBet;
@@ -151,7 +154,7 @@ function makeReport(player: PlayerId, state: RecoveryState, balls: number): Play
   const rules = STRATEGY_RULES[player];
   return {
     player, odds: rules.odds, normalBet: rules.normalBet, targetDescription: rules.targetDescription,
-    balls, wins: state.wins, losses: state.losses, recoveries: state.recoveries, holds: state.holds,
+    balls, wins: state.wins, losses: state.losses, recoveries: state.recoveries,
     lossCycles: state.lossCycles, normalInvestment: state.normalInvestment,
     recoveryInvestment: state.recoveryInvestment, lossInvestment: state.lossInvestment,
     totalInvestment: state.totalInvestment, normalWinReturns: state.normalWinReturns,
